@@ -1,0 +1,47 @@
+{
+    "DJI_20230629093753_0210_V": {
+        "split_1": {
+            "mask_4": {
+                "box":[945,331,1094,481],
+                "category":"plastic"
+            },
+            "mask_10": {
+                "box":[1212,266,1295,351],
+                "category":"plastic"
+            }
+        },
+        "split_2": {
+            "mask_0": {
+                "box":[945,331,1094,481],
+                "category":"plastic"
+            },
+            "mask_2": {
+                "box":[1212,266,1295,351],
+                "category":"plastic"
+            }
+
+        }
+    },
+    "DJI_20230629093753_0210_V3": {
+        "split_1": {
+            "mask_4": {
+                "box":[945,331,1094,481],
+                "category":"plastic"
+            },
+            "mask_2": {
+                "box":[1212,266,1295,351],
+                "category":"plastic"
+            }
+        },
+        "split_2": {
+            "mask_4": {
+                "box":[945,331,1094,481],
+                "category":"plastic"
+            },
+            "mask_10": {
+                "box":[1212,266,1295,351],
+                "category":"plastic"
+            }
+        }
+    }
+}

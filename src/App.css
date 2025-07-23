@@ -1,38 +1,298 @@
+/* General App Styling */
+:root {
+    --primary-bg: #111827;
+    --secondary-bg: #1F2937;
+    --tertiary-bg: #374151;
+    --border-color: #4B5563;
+    --text-light: #F9FAFB;
+    --text-dark: #9CA3AF;
+    --indigo: #6366F1;
+    --indigo-hover: #4F46E5;
+    --green: #10B981;
+    --green-hover: #059669;
+    --purple: #8B5CF6;
+    --purple-hover: #7C3AED;
+    --red: #EF4444;
+    --yellow: #FBBF24;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--primary-bg);
+    color: var(--text-light);
+}
+
 .App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 .App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+    background-color: var(--secondary-bg);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
-.App-link {
-  color: #61dafb;
+.App-header h1 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--indigo);
+    margin: 0;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.App-content {
+    flex-grow: 1;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Buttons */
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background-color: var(--indigo);
+}
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--indigo-hover);
+}
+
+.btn-success {
+    background-color: var(--green);
+}
+.btn-success:hover:not(:disabled) {
+    background-color: var(--green-hover);
+}
+
+.btn-purple {
+    background-color: var(--purple);
+    padding: 0.75rem 2rem;
+}
+.btn-purple:hover:not(:disabled) {
+    background-color: var(--purple-hover);
+}
+
+.btn-tagged {
+    background-color: var(--green);
+    outline: 2px solid white;
+}
+
+
+/* Main Layout */
+.main-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    flex-grow: 1;
+}
+
+@media (min-width: 1024px) {
+    .main-grid {
+        grid-template-columns: 1fr 2fr;
+    }
+}
+
+/* Control Panel */
+.control-panel {
+    background-color: var(--secondary-bg);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.control-group label {
+    font-size: 0.875rem;
+    color: var(--text-dark);
+}
+
+select {
+    width: 100%;
+    padding: 0.6rem;
+    background-color: var(--tertiary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    color: var(--text-light);
+}
+
+/* Mask Info */
+.mask-info-box {
+    background-color: var(--tertiary-bg);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.mask-info-box h3 {
+    margin-top: 0;
+    color: var(--indigo);
+}
+
+.mask-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.mask-navigation button {
+    padding: 0.5rem 1rem;
+    background-color: var(--border-color);
+}
+
+.mask-preview {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background-color: var(--primary-bg);
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.mask-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.mask-placeholder {
+    color: var(--text-dark);
+    font-size: 0.875rem;
+}
+
+.tagging-section {
+    margin-top: 1rem;
+}
+
+.tag-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+/* Image Viewer */
+.image-viewer {
+    background-color: var(--secondary-bg);
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    color: var(--text-dark);
+}
+
+.image-container {
+    position: relative;
+    line-height: 0; /* a fix to remove extra space below the image */
+}
+
+.image-container img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 0.25rem;
+}
+
+.bounding-box {
+    position: absolute;
+    border: 4px solid var(--yellow);
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+/* Placeholders & Banners */
+.placeholder-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+}
+
+.placeholder-title {
+    font-size: 1.5rem;
+}
+
+.error-banner {
+    background-color: var(--red);
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    margin: 1rem;
+    border-radius: 0.5rem;
+}
+
+/* Components */
+.spinner {
+    animation: spin 1s linear infinite;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: var(--indigo);
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+}
+
+@keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+}
+
+.modal-content {
+    background-color: white;
+    color: var(--primary-bg);
+    padding: 2rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
