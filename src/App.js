@@ -39,13 +39,11 @@ export default function App() {
 
     // --- Constants ---
     const CATEGORIES = useMemo(() => [
-        "Background", "Carton", "Ceramics", "Concrete", "Gypsum", "Glass", 
-        "Metal (general)", "Metal (iron bender)", "Metal (pipe)", "Nylon", 
-        "Paper", "Plastic (general)", "Plastic (big bag)", "Plastic (bucket)", 
-        "Plastic (pipe)", "Plastic (sand bag)", "Rubber", "Styrofoam", 
-        "Textile", "Unknown", "Wood (pallet)", "Wood (scraps/cuttings)"
+        "🌿Background", "📦Carton", "🧱Ceramics", "🪨Concrete", "🎈Flexible Polymer", "🪟Glass", 
+        "⚙️Metal", "📄Paper", "🪣Rigid Polymer", "⚫Rubber", 
+        "👕Textile", "🪵Wood", "❓Unknown"
     ], []);
-
+    // 🏺Ceramics🏺🛞Rubber🛞
     // --- Memoized Derived State ---
     const imageKeys = useMemo(() => (jsonData ? Object.keys(jsonData) : []), [jsonData]);
 
@@ -327,7 +325,6 @@ export default function App() {
 
                     {currentMaskData ? (
                         <div className="mask-info-box">
-                            <h3>Current Mask</h3>
                             <div className="mask-navigation">
                                 <button onClick={() => navigateMasks(-1)} disabled={currentMaskIndex === 0}>Prev</button>
                                 <span>{`Mask ${currentMaskIndex + 1} / ${sortedMaskKeys.length}`}</span>
@@ -337,7 +334,6 @@ export default function App() {
                                 {isMaskLoading ? <Spinner /> : maskImageSrc ? <img src={maskImageSrc} alt={`Mask ${currentMaskIndex}`} /> : <div className="mask-placeholder">Mask not found</div>}
                             </div>
                             <div className="tagging-section">
-                                <h3>Tag this mask:</h3>
                                 <div className="tag-buttons">
                                     {CATEGORIES.map(cat => {
                                         const currentLabel = currentMaskData?.label || 'Unknown';
@@ -377,7 +373,7 @@ export default function App() {
         <div className="App">
             {modalMessage && <Modal message={modalMessage} onClose={() => setModalMessage('')} />}
             <header className="App-header">
-                <h1>Image Tagging Interface (Local)</h1>
+                <h1>WildWaste</h1>
                 <div className="header-actions">
                      <label htmlFor="file-upload" className="btn btn-primary">Load Data JSON</label>
                     <input id="file-upload" type="file" accept=".json" onChange={handleFileChange} style={{display: 'none'}}/>

@@ -1,19 +1,34 @@
 /* General App Styling */
 :root {
-    --primary-bg: #111827;
-    --secondary-bg: #1F2937;
-    --tertiary-bg: #374151;
-    --border-color: #4B5563;
-    --text-light: #F9FAFB;
-    --text-dark: #9CA3AF;
-    --indigo: #6366F1;
-    --indigo-hover: #4F46E5;
-    --green: #10B981;
-    --green-hover: #059669;
-    --purple: #8B5CF6;
-    --purple-hover: #7C3AED;
-    --red: #EF4444;
-    --yellow: #FBBF24;
+    /* --primary-bg: #1c2522;
+    --secondary-bg: #2a3a35;
+    --tertiary-bg: #3a5047;
+    --border-color: #4f685d;
+    --text-light: #e8f0e5;
+    --text-dark: #a2b5a8;
+    --indigo: #6a994e;        
+    --indigo-hover: #5a8342;
+    --green: #a7c957;         
+    --green-hover: #96b44c;
+    --purple: #bc96e6;
+    --purple-hover: #a980d4;
+    --red: #f28482;
+    --yellow: #f6bd60; */
+
+     --primary-bg: #292524;
+    --secondary-bg: #44403c;
+    --tertiary-bg: #57534e;
+    --border-color: #78716c; 
+    --text-light: #f5f5f4;
+    --text-dark: #a8a29e;
+    --indigo: #6a994e;        
+    --indigo-hover: #5a8342;
+    --green: #84cc16;
+    --green-hover: #65a30d;
+    --purple: #a78bfa;
+    --purple-hover: #9333ea;
+    --red: #ef4444;
+    --yellow: #facc15;
 }
 
 body {
@@ -78,10 +93,10 @@ body {
 }
 
 .btn-primary {
-    background-color: var(--indigo);
+    background-color: var(--indigo-hover);
 }
 .btn-primary:hover:not(:disabled) {
-    background-color: var(--indigo-hover);
+    background-color: var(--indigo);
 }
 
 .btn-success {
@@ -205,8 +220,14 @@ select {
 
 .tag-buttons {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 0.5rem;
+}
+
+.tag-buttons .btn {
+    /* background-color: rgb(29, 0, 136); */
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
 }
 
 /* Image Viewer */
