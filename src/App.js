@@ -384,7 +384,7 @@ export default function App() {
                         <div className="mask-info-box">
                             <div className="mask-navigation">
                                 <button onClick={() => navigateMasks(-1)} disabled={currentMaskIndex === 0}>Prev</button>
-                                <span>{`Mask ${currentMaskIndex + 1} / ${sortedMaskKeys.length}`}</span>
+                                <span>{currentMaskKey ? `Mask ${currentMaskKey.split('_')[1]} / ${sortedMaskKeys.length}` : '...'}</span>
                                 <button onClick={() => navigateMasks(1)} disabled={currentMaskIndex >= sortedMaskKeys.length - 1}>Next</button>
                             </div>
                             <div className="mask-preview">
