@@ -93,14 +93,15 @@ body {
 }
 
 .btn-primary {
-    background-color: var(--indigo-hover);
+    background-color: var(--indigo);
 }
 .btn-primary:hover:not(:disabled) {
-    background-color: var(--indigo);
+    background-color: var(--indigo-hover);
 }
 
 .btn-success {
     background-color: var(--green);
+    color: var(--primary-bg);
 }
 .btn-success:hover:not(:disabled) {
     background-color: var(--green-hover);
@@ -117,6 +118,7 @@ body {
 .btn-tagged {
     background-color: var(--green);
     outline: 2px solid white;
+    color: var(--primary-bg);
 }
 
 
@@ -164,6 +166,34 @@ select {
     color: var(--text-light);
 }
 
+/* --- New Progress Bar Styles --- */
+.progress-bar-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.progress-bar-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: var(--text-dark);
+}
+.progress-bar-background {
+    width: 100%;
+    height: 8px;
+    background-color: var(--primary-bg);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-bar-fill {
+    height: 100%;
+    background-color: var(--green);
+    border-radius: 4px;
+    transition: width 0.3s ease-in-out;
+}
+/* --- End Progress Bar Styles --- */
+
+
 /* Mask Info */
 .mask-info-box {
     background-color: var(--tertiary-bg);
@@ -172,7 +202,7 @@ select {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
 }
 
 .mask-info-box h3 {
@@ -193,7 +223,8 @@ select {
 }
 
 .mask-preview {
-    width: 100%;
+    width: 85%;
+    margin: 0 auto 1rem;
     aspect-ratio: 1 / 1;
     background-color: var(--primary-bg);
     border-radius: 0.5rem;
@@ -220,12 +251,11 @@ select {
 
 .tag-buttons {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 0.5rem;
 }
 
 .tag-buttons .btn {
-    /* background-color: rgb(29, 0, 136); */
     padding: 0.75rem 0.5rem;
     font-size: 0.9rem;
 }
@@ -244,7 +274,7 @@ select {
 
 .image-container {
     position: relative;
-    line-height: 0; /* a fix to remove extra space below the image */
+    line-height: 0;
 }
 
 .image-container img {
@@ -257,7 +287,7 @@ select {
     position: absolute;
     border: 4px solid var(--yellow);
     box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    pointer-events: none; /* Prevent the box from blocking mouse events on the image */
+    pointer-events: none;
 }
 
 /* Placeholders & Banners */
@@ -311,8 +341,8 @@ select {
 }
 
 .modal-content {
-    background-color: white;
-    color: var(--primary-bg);
+    background-color: var(--secondary-bg);
+    color: var(--text-light);
     padding: 2rem;
     border-radius: 0.5rem;
     text-align: center;
