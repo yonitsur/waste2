@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import './App.css'; // Import the standard CSS file
 
 // --- Helper Components ---
@@ -27,29 +27,53 @@ export default function App() {
     const [selectedImageKey, setSelectedImageKey] = useState('');
     const [selectedSplit, setSelectedSplit] = useState(1);
     const [currentMaskIndex, setCurrentMaskIndex] = useState(0);
-    const [tags, setTags] = useState({});
     const [mainImageSrc, setMainImageSrc] = useState('');
     const [maskImageSrc, setMaskImageSrc] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isMaskLoading, setIsMaskLoading] = useState(false); // Dedicated loading state for mask
+    const [isMaskLoading, setIsMaskLoading] = useState(false);
     const [error, setError] = useState(null);
     const [modalMessage, setModalMessage] = useState('');
+    const [scale, setScale] = useState({ x: 1, y: 1 });
+    
+    const imageRef = useRef(null);
 
     // --- Constants ---
-    const CATEGORIES = useMemo(() => ["Building", "Vehicle", "Tree", "Road", "Person", "Other"], []);
+    const CATEGORIES = useMemo(() => [
+        "Background", "Carton", "Ceramics", "Concrete", "Gypsum", "Glass", 
+        "Metal (general)", "Metal (iron bender)", "Metal (pipe)", "Nylon", 
+        "Paper", "Plastic (general)", "Plastic (big bag)", "Plastic (bucket)", 
+        "Plastic (pipe)", "Plastic (sand bag)", "Rubber", "Styrofoam", 
+        "Textile", "Unknown", "Wood (pallet)", "Wood (scraps/cuttings)"
+    ], []);
 
     // --- Memoized Derived State ---
     const imageKeys = useMemo(() => (jsonData ? Object.keys(jsonData) : []), [jsonData]);
 
     const currentSplitData = useMemo(() => {
         if (!jsonData || !selectedImageKey) return null;
-        const splitKey = `split_${selectedSplit - 1}`;
+        // Accessing split data with 1-based index (e.g., "split_1")
+        const splitKey = `split_${selectedSplit}`;
         return jsonData[selectedImageKey]?.[splitKey] || null;
     }, [jsonData, selectedImageKey, selectedSplit]);
 
+    // Sort masks to show "Unknown" first
     const maskKeys = useMemo(() => {
         if (!currentSplitData) return [];
-        return Object.keys(currentSplitData).filter(key => key.startsWith('mask_')).sort((a, b) => parseInt(a.split('_')[1], 10) - parseInt(b.split('_')[1], 10));
+        const keys = Object.keys(currentSplitData).filter(key => key.startsWith('mask_'));
+        
+        keys.sort((a, b) => {
+            const labelA = currentSplitData[a]?.label || 'Unknown';
+            const labelB = currentSplitData[b]?.label || 'Unknown';
+            const numA = parseInt(a.split('_')[1], 10);
+            const numB = parseInt(b.split('_')[1], 10);
+
+            if (labelA === 'Unknown' && labelB !== 'Unknown') return -1;
+            if (labelA !== 'Unknown' && labelB === 'Unknown') return 1;
+            
+            return numA - numB; // Fallback to numeric sort for masks with same label status
+        });
+
+        return keys;
     }, [currentSplitData]);
 
     const currentMaskData = useMemo(() => {
@@ -61,26 +85,23 @@ export default function App() {
     // --- Local File Access Logic ---
     const getLocalImageSrc = useCallback(async (imageKey, splitNum, maskNum = null) => {
         if (!directoryHandle) return null;
-
         try {
-            const splitFolderName = `split_${splitNum - 1}`;
+            // File paths are 1-based, so we use the UI split number directly.
+            const splitFolderName = `split_${splitNum}`;
             const imageDirHandle = await directoryHandle.getDirectoryHandle(imageKey);
             const splitDirHandle = await imageDirHandle.getDirectoryHandle(splitFolderName);
-
-            let fileName;
-            if (maskNum !== null) {
-                fileName = `mask_${maskNum}.jpg`;
-            } else {
-                fileName = `split_${splitNum - 1}.jpg`;
-            }
-
+            
+            const fileName = maskNum !== null 
+                ? `mask_${maskNum}.jpg` 
+                : `split_${splitNum}.jpg`;
+            
             const fileHandle = await splitDirHandle.getFileHandle(fileName);
             const file = await fileHandle.getFile();
             return URL.createObjectURL(file);
-
         } catch (err) {
             console.error(`Could not find or access image: ${err.message}`);
-            setError(`Could not find image file. Expected path: /${imageKey}/${`split_${splitNum-1}`}/${maskNum !== null ? `mask_${maskNum}.jpg` : `split_${splitNum-1}.jpg`}`);
+            const expectedPath = `/${imageKey}/${`split_${splitNum}`}/${maskNum !== null ? `mask_${maskNum}.jpg` : `split_${splitNum}.jpg`}`;
+            setError(`Could not find image file. Expected path: ${expectedPath}`);
             return null;
         }
     }, [directoryHandle]);
@@ -90,8 +111,6 @@ export default function App() {
         if (imageKeys.length > 0) {
             setSelectedImageKey(imageKeys[0]);
             setSelectedSplit(1);
-            setCurrentMaskIndex(0);
-            // Do not reset tags here, so they persist across JSON loads if desired
         } else {
             setSelectedImageKey('');
         }
@@ -101,38 +120,28 @@ export default function App() {
         setCurrentMaskIndex(0);
     }, [selectedImageKey, selectedSplit]);
 
-    // Effect to load the main split image from local directory
     useEffect(() => {
         if (!selectedImageKey || !directoryHandle) {
             setMainImageSrc('');
             return;
-        };
-        
+        }
         let objectUrl = null;
         const load = async () => {
             setIsLoading(true);
-            setError(null); // Clear previous errors on new load
+            setError(null);
             objectUrl = await getLocalImageSrc(selectedImageKey, selectedSplit);
             setMainImageSrc(objectUrl || '');
             setIsLoading(false);
         };
         load();
-
-        // Cleanup function to revoke the object URL to prevent memory leaks
-        return () => {
-            if (objectUrl) {
-                URL.revokeObjectURL(objectUrl);
-            }
-        };
+        return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
     }, [selectedImageKey, selectedSplit, getLocalImageSrc, directoryHandle]);
 
-    // Effect to load the current mask image from local directory
     useEffect(() => {
         if (!currentMaskData || !directoryHandle) {
             setMaskImageSrc('');
             return;
         }
-
         let objectUrl = null;
         const load = async () => {
             setIsMaskLoading(true);
@@ -142,14 +151,37 @@ export default function App() {
             setIsMaskLoading(false);
         };
         load();
-        
-        // Cleanup function to revoke the object URL to prevent memory leaks
-        return () => {
-            if(objectUrl) {
-                URL.revokeObjectURL(objectUrl);
-            }
-        };
+        return () => { if(objectUrl) URL.revokeObjectURL(objectUrl); };
     }, [currentMaskData, currentMaskIndex, selectedImageKey, selectedSplit, getLocalImageSrc, directoryHandle, maskKeys]);
+    
+    // Effect for calculating image scale for BBOX
+    useEffect(() => {
+        const imgElement = imageRef.current;
+        if (!imgElement) return;
+
+        const observer = new ResizeObserver(() => {
+            if (imgElement.naturalWidth > 0 && imgElement.offsetWidth > 0) {
+                setScale({
+                    x: imgElement.offsetWidth / imgElement.naturalWidth,
+                    y: imgElement.offsetHeight / imgElement.naturalHeight,
+                });
+            }
+        });
+
+        const handleLoad = () => {
+            observer.observe(imgElement);
+        };
+        
+        imgElement.addEventListener('load', handleLoad);
+        if (imgElement.complete) {
+            handleLoad();
+        }
+
+        return () => {
+            imgElement.removeEventListener('load', handleLoad);
+            observer.disconnect();
+        };
+    }, [mainImageSrc]);
 
     // --- Event Handlers ---
     const handleFileChange = (event) => {
@@ -159,14 +191,25 @@ export default function App() {
             reader.onload = (e) => {
                 try {
                     const content = JSON.parse(e.target.result);
-                    if (typeof content === 'object' && content !== null) {
-                        setJsonData(content);
-                        setDirectoryHandle(null);
-                        setTags({}); // Reset tags when new master JSON is loaded
-                        setError(null);
-                    } else {
-                       throw new Error("JSON is empty or not in the expected format.");
+                    if (typeof content !== 'object' || content === null) {
+                        throw new Error("JSON is empty or not an object.");
                     }
+                    
+                    // Add 'label' field only if it doesn't exist
+                    Object.values(content).forEach(image => {
+                        Object.values(image).forEach(split => {
+                            Object.entries(split).forEach(([key, value]) => {
+                                if (key.startsWith('mask_') && !('label' in value)) {
+                                    value.label = 'Unknown';
+                                }
+                            });
+                        });
+                    });
+
+                    setJsonData(content);
+                    setDirectoryHandle(null);
+                    setError(null);
+
                 } catch (err) {
                     setError(`Error parsing JSON file: ${err.message}`);
                     setJsonData(null);
@@ -175,30 +218,6 @@ export default function App() {
             reader.readAsText(file);
         } else {
             setError("Please upload a valid JSON file.");
-        }
-    };
-    
-    const handleTagFileChange = (event) => {
-        const file = event.target.files[0];
-        if (file && file.type === "application/json") {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const content = JSON.parse(e.target.result);
-                    if (typeof content === 'object' && content !== null) {
-                        setTags(content);
-                        setModalMessage('Tags loaded successfully!');
-                        setError(null);
-                    } else {
-                       throw new Error("Tag file is empty or not in the expected format.");
-                    }
-                } catch (err) {
-                    setError(`Error parsing tag file: ${err.message}`);
-                }
-            };
-            reader.readAsText(file);
-        } else {
-            setError("Please upload a valid JSON file for tags.");
         }
     };
 
@@ -210,7 +229,6 @@ export default function App() {
         } catch (err) {
             if (err.name !== 'AbortError') {
                 setError("Could not get directory handle. Please try again.");
-                console.error(err);
             }
         }
     };
@@ -218,11 +236,12 @@ export default function App() {
     const handleTagging = (category) => {
         if (!selectedImageKey || !currentSplitData || !currentMaskData) return;
         
-        const splitKey = `split_${selectedSplit - 1}`;
+        const splitKey = `split_${selectedSplit}`;
         const maskKey = maskKeys[currentMaskIndex];
-        const uniqueMaskId = `${selectedImageKey}/${splitKey}/${maskKey}`;
 
-        setTags(prevTags => ({ ...prevTags, [uniqueMaskId]: category }));
+        const updatedJsonData = JSON.parse(JSON.stringify(jsonData));
+        updatedJsonData[selectedImageKey][splitKey][maskKey].label = category;
+        setJsonData(updatedJsonData);
 
         if (currentMaskIndex < maskKeys.length - 1) {
             setCurrentMaskIndex(currentMaskIndex + 1);
@@ -238,43 +257,44 @@ export default function App() {
         }
     };
     
-    const exportTags = () => {
-        if (Object.keys(tags).length === 0) {
-            setModalMessage("No tags to export yet!");
+    const exportJson = () => {
+        if (!jsonData) {
+            setModalMessage("No data to export yet!");
             return;
         }
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tags, null, 2));
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonData, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "tagged_data.json");
+        downloadAnchorNode.setAttribute("download", "updated_data.json");
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
     };
 
     // --- Rendering Logic ---
-    const BoundingBox = () => {
-        if (!currentMaskData || !currentMaskData.box) return null;
-        const [left, top, right, bottom] = currentMaskData.box;
-        return <div className="bounding-box" style={{ left: `${left}px`, top: `${top}px`, width: `${right - left}px`, height: `${bottom - top}px` }}></div>;
+    const BoundingBox = ({ scale }) => {
+        if (!currentMaskData?.bbox || !scale.x || !scale.y) return null;
+    
+        const [x1, y1, x2, y2] = currentMaskData.bbox;
+        const style = {
+            left: `${x1 * scale.x}px`,
+            top: `${y1 * scale.y}px`,
+            width: `${(x2 - x1) * scale.x}px`,
+            height: `${(y2 - y1) * scale.y}px`,
+        };
+        return <div className="bounding-box" style={style}></div>;
     };
 
     const renderContent = () => {
         if (!jsonData) {
-            return (
-                <div className="placeholder-container">
-                    <h2 className="placeholder-title">Step 1: Please load a JSON file to begin.</h2>
-                </div>
-            );
+            return <div className="placeholder-container"><h2 className="placeholder-title">Step 1: Please load your data JSON file.</h2></div>;
         }
         if (!directoryHandle) {
              return (
                 <div className="placeholder-container">
                     <h2 className="placeholder-title">Step 2: Select your main image data folder.</h2>
                     <p>This should be the folder that contains all your image name subfolders.</p>
-                    <button onClick={handleDirectoryLoad} className="btn btn-purple">
-                        Load Image Directory
-                    </button>
+                    <button onClick={handleDirectoryLoad} className="btn btn-purple">Load Image Directory</button>
                 </div>
             );
         }
@@ -309,8 +329,8 @@ export default function App() {
                                 <h3>Tag this mask:</h3>
                                 <div className="tag-buttons">
                                     {CATEGORIES.map(cat => {
-                                        const uniqueMaskId = `${selectedImageKey}/split_${selectedSplit - 1}/${maskKeys[currentMaskIndex]}`;
-                                        const isTagged = tags[uniqueMaskId] === cat;
+                                        const currentLabel = currentMaskData?.label || 'Unknown';
+                                        const isTagged = currentLabel === cat;
                                         return <button key={cat} onClick={() => handleTagging(cat)} className={`btn ${isTagged ? 'btn-tagged' : 'btn-primary'}`}>{cat}</button>
                                     })}
                                 </div>
@@ -322,8 +342,12 @@ export default function App() {
                 <div className="image-viewer">
                     {isLoading ? <Spinner /> : mainImageSrc ? (
                         <div className="image-container">
-                            <img src={mainImageSrc} alt={`Split ${selectedSplit} for ${selectedImageKey}`} />
-                            <BoundingBox />
+                            <img
+                                ref={imageRef}
+                                src={mainImageSrc}
+                                alt={`Split ${selectedSplit} for ${selectedImageKey}`}
+                            />
+                            <BoundingBox scale={scale} />
                         </div>
                     ) : (
                         <p>Select an image to display.</p>
@@ -336,22 +360,15 @@ export default function App() {
     return (
         <div className="App">
             {modalMessage && <Modal message={modalMessage} onClose={() => setModalMessage('')} />}
-            
             <header className="App-header">
                 <h1>Image Tagging Interface (Local)</h1>
                 <div className="header-actions">
-                     <label htmlFor="file-upload" className="btn btn-primary">Load JSON</label>
+                     <label htmlFor="file-upload" className="btn btn-primary">Load Data JSON</label>
                     <input id="file-upload" type="file" accept=".json" onChange={handleFileChange} style={{display: 'none'}}/>
-                    
-                    <label htmlFor="tag-file-upload" className="btn btn-primary">Load Tags</label>
-                    <input id="tag-file-upload" type="file" accept=".json" onChange={handleTagFileChange} style={{display: 'none'}}/>
-                    
-                    <button onClick={exportTags} disabled={!jsonData || !directoryHandle} className="btn btn-success">Export Tags</button>
+                    <button onClick={exportJson} disabled={!jsonData || !directoryHandle} className="btn btn-success">Export Updated JSON</button>
                 </div>
             </header>
-
             {error && <div className="error-banner">{error}</div>}
-
             <main className="App-content">
                 {renderContent()}
             </main>
