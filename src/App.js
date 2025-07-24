@@ -51,13 +51,14 @@ export default function App() {
 
     const currentSplitData = useMemo(() => {
         if (!jsonData || !selectedImageKey) return null;
-        // Accessing split data with 1-based index (e.g., "split_1")
         const splitKey = `split_${selectedSplit}`;
         return jsonData[selectedImageKey]?.[splitKey] || null;
     }, [jsonData, selectedImageKey, selectedSplit]);
 
-    // Sort masks to show "Unknown" first
-    const maskKeys = useMemo(() => {
+    // This list of mask keys is sorted to show "Unknown" items first.
+    // It is recalculated whenever the underlying data changes, which allows
+    // for a reactive "auto-advance" feature when an item is tagged.
+    const sortedMaskKeys = useMemo(() => {
         if (!currentSplitData) return [];
         const keys = Object.keys(currentSplitData).filter(key => key.startsWith('mask_'));
         
@@ -67,26 +68,34 @@ export default function App() {
             const numA = parseInt(a.split('_')[1], 10);
             const numB = parseInt(b.split('_')[1], 10);
 
+            // Prioritize "Unknown" labels
             if (labelA === 'Unknown' && labelB !== 'Unknown') return -1;
             if (labelA !== 'Unknown' && labelB === 'Unknown') return 1;
             
-            return numA - numB; // Fallback to numeric sort for masks with same label status
+            // Fallback to sorting by mask number
+            return numA - numB;
         });
 
         return keys;
     }, [currentSplitData]);
+    
+    const currentMaskKey = useMemo(() => {
+        if (!sortedMaskKeys || sortedMaskKeys.length === 0) return null;
+        // Ensure index is within bounds, especially after data changes.
+        const safeIndex = Math.min(currentMaskIndex, sortedMaskKeys.length - 1);
+        return sortedMaskKeys[safeIndex];
+    }, [sortedMaskKeys, currentMaskIndex]);
+
 
     const currentMaskData = useMemo(() => {
-        if (!currentSplitData || maskKeys.length === 0) return null;
-        const maskKey = maskKeys[currentMaskIndex];
-        return currentSplitData[maskKey];
-    }, [currentSplitData, maskKeys, currentMaskIndex]);
+        if (!currentSplitData || !currentMaskKey) return null;
+        return currentSplitData[currentMaskKey];
+    }, [currentSplitData, currentMaskKey]);
 
     // --- Local File Access Logic ---
     const getLocalImageSrc = useCallback(async (imageKey, splitNum, maskNum = null) => {
         if (!directoryHandle) return null;
         try {
-            // File paths are 1-based, so we use the UI split number directly.
             const splitFolderName = `split_${splitNum}`;
             const imageDirHandle = await directoryHandle.getDirectoryHandle(imageKey);
             const splitDirHandle = await imageDirHandle.getDirectoryHandle(splitFolderName);
@@ -107,19 +116,22 @@ export default function App() {
     }, [directoryHandle]);
 
     // --- Effects ---
+    // Effect to initialize or reset selection when data loads
     useEffect(() => {
-        if (imageKeys.length > 0) {
+        if (imageKeys.length > 0 && !selectedImageKey) {
             setSelectedImageKey(imageKeys[0]);
             setSelectedSplit(1);
-        } else {
+        } else if (imageKeys.length === 0) {
             setSelectedImageKey('');
         }
-    }, [imageKeys]);
+    }, [imageKeys, selectedImageKey]);
     
+    // Effect to reset the mask index when the user selects a new image or split
     useEffect(() => {
         setCurrentMaskIndex(0);
     }, [selectedImageKey, selectedSplit]);
 
+    // Effect to load the main split image
     useEffect(() => {
         if (!selectedImageKey || !directoryHandle) {
             setMainImageSrc('');
@@ -137,22 +149,23 @@ export default function App() {
         return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
     }, [selectedImageKey, selectedSplit, getLocalImageSrc, directoryHandle]);
 
+    // Effect to load the current mask image
     useEffect(() => {
-        if (!currentMaskData || !directoryHandle) {
+        if (!currentMaskKey || !directoryHandle) {
             setMaskImageSrc('');
             return;
         }
         let objectUrl = null;
         const load = async () => {
             setIsMaskLoading(true);
-            const maskNumber = maskKeys[currentMaskIndex].split('_')[1];
+            const maskNumber = currentMaskKey.split('_')[1];
             objectUrl = await getLocalImageSrc(selectedImageKey, selectedSplit, maskNumber);
             setMaskImageSrc(objectUrl || '');
             setIsMaskLoading(false);
         };
         load();
         return () => { if(objectUrl) URL.revokeObjectURL(objectUrl); };
-    }, [currentMaskData, currentMaskIndex, selectedImageKey, selectedSplit, getLocalImageSrc, directoryHandle, maskKeys]);
+    }, [currentMaskKey, selectedImageKey, selectedSplit, getLocalImageSrc, directoryHandle]);
     
     // Effect for calculating image scale for BBOX
     useEffect(() => {
@@ -170,6 +183,12 @@ export default function App() {
 
         const handleLoad = () => {
             observer.observe(imgElement);
+             if (imgElement.naturalWidth > 0 && imgElement.offsetWidth > 0) {
+                setScale({
+                    x: imgElement.offsetWidth / imgElement.naturalWidth,
+                    y: imgElement.offsetHeight / imgElement.naturalHeight,
+                });
+            }
         };
         
         imgElement.addEventListener('load', handleLoad);
@@ -195,7 +214,6 @@ export default function App() {
                         throw new Error("JSON is empty or not an object.");
                     }
                     
-                    // Add 'label' field only if it doesn't exist
                     Object.values(content).forEach(image => {
                         Object.values(image).forEach(split => {
                             Object.entries(split).forEach(([key, value]) => {
@@ -234,25 +252,18 @@ export default function App() {
     };
 
     const handleTagging = (category) => {
-        if (!selectedImageKey || !currentSplitData || !currentMaskData) return;
+        if (!selectedImageKey || !currentSplitData || !currentMaskKey) return;
         
         const splitKey = `split_${selectedSplit}`;
-        const maskKey = maskKeys[currentMaskIndex];
 
         const updatedJsonData = JSON.parse(JSON.stringify(jsonData));
-        updatedJsonData[selectedImageKey][splitKey][maskKey].label = category;
+        updatedJsonData[selectedImageKey][splitKey][currentMaskKey].label = category;
         setJsonData(updatedJsonData);
-
-        if (currentMaskIndex < maskKeys.length - 1) {
-            setCurrentMaskIndex(currentMaskIndex + 1);
-        } else {
-            setModalMessage("All masks in this split have been tagged!");
-        }
     };
 
     const navigateMasks = (direction) => {
         const newIndex = currentMaskIndex + direction;
-        if (newIndex >= 0 && newIndex < maskKeys.length) {
+        if (newIndex >= 0 && newIndex < sortedMaskKeys.length) {
             setCurrentMaskIndex(newIndex);
         }
     };
@@ -314,13 +325,13 @@ export default function App() {
                         </select>
                     </div>
 
-                    {currentMaskData && (
+                    {currentMaskData ? (
                         <div className="mask-info-box">
                             <h3>Current Mask</h3>
                             <div className="mask-navigation">
                                 <button onClick={() => navigateMasks(-1)} disabled={currentMaskIndex === 0}>Prev</button>
-                                <span>{`Mask ${currentMaskIndex + 1} / ${maskKeys.length}`}</span>
-                                <button onClick={() => navigateMasks(1)} disabled={currentMaskIndex >= maskKeys.length - 1}>Next</button>
+                                <span>{`Mask ${currentMaskIndex + 1} / ${sortedMaskKeys.length}`}</span>
+                                <button onClick={() => navigateMasks(1)} disabled={currentMaskIndex >= sortedMaskKeys.length - 1}>Next</button>
                             </div>
                             <div className="mask-preview">
                                 {isMaskLoading ? <Spinner /> : maskImageSrc ? <img src={maskImageSrc} alt={`Mask ${currentMaskIndex}`} /> : <div className="mask-placeholder">Mask not found</div>}
@@ -336,6 +347,11 @@ export default function App() {
                                 </div>
                             </div>
                         </div>
+                    ) : (
+                        <div className="mask-info-box">
+                           <h3>All masks in this split appear to be tagged.</h3>
+                           <p>Select another split or image to continue.</p>
+                        </div>
                     )}
                 </div>
 
@@ -350,7 +366,7 @@ export default function App() {
                             <BoundingBox scale={scale} />
                         </div>
                     ) : (
-                        <p>Select an image to display.</p>
+                        <p>Select an image and data folder to begin.</p>
                     )}
                 </div>
             </div>
