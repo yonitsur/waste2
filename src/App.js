@@ -311,13 +311,13 @@ export default function App() {
             <div className="main-grid">
                 <div className="control-panel">
                     <div className="control-group">
-                        <label htmlFor="image-select">Image Key</label>
+                        <label htmlFor="image-select">Image</label>
                         <select id="image-select" value={selectedImageKey} onChange={e => setSelectedImageKey(e.target.value)}>
                             {imageKeys.map(key => <option key={key} value={key}>{key}</option>)}
                         </select>
                     </div>
                     <div className="control-group">
-                        <label htmlFor="split-select">Split Number</label>
+                        <label htmlFor="split-select">Split</label>
                         <select id="split-select" value={selectedSplit} onChange={e => setSelectedSplit(Number(e.target.value))}>
                             {Array.from({ length: 16 }, (_, i) => i + 1).map(num => <option key={num} value={num}>{num}</option>)}
                         </select>
